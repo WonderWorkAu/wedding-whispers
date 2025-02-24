@@ -74,7 +74,7 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState("luxury wedding");
   const { toast } = useToast();
   
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["news", searchQuery],
     queryFn: () => fetchNews(searchQuery),
     refetchInterval: 1000 * 60 * 60, // 1 hour
@@ -82,7 +82,14 @@ const Index = () => {
     refetchOnMount: false,
     staleTime: 1000 * 60 * 60,
     retry: 3,
-    onError: (error: any) => {
+    meta: {
+      errorMessage: "Failed to fetch wedding news"
+    },
+  });
+
+  // Handle error state with useEffect
+  React.useEffect(() => {
+    if (error) {
       console.error('Query error:', error);
       toast({
         title: "Error",
@@ -90,12 +97,7 @@ const Index = () => {
         variant: "destructive",
       });
     }
-  });
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    refetch();
-  };
+  }, [error, toast]);
 
   if (error) {
     return (
@@ -112,7 +114,7 @@ const Index = () => {
           <h1 className="text-4xl md:text-5xl font-serif mb-4">Wedded Wonderland</h1>
           <p className="text-muted-foreground mb-8">Your Daily Source for Wedding News & Inspiration</p>
           
-          <form onSubmit={handleSearch} className="max-w-2xl mx-auto flex gap-2">
+          <form onSubmit={(e) => { e.preventDefault(); }} className="max-w-2xl mx-auto flex gap-2">
             <Input
               type="text"
               placeholder="Search wedding news..."
@@ -156,4 +158,3 @@ const Index = () => {
 };
 
 export default Index;
-
