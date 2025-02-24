@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const API_KEY = "bfbdfc07-da15-462c-8bb9-64204801921c";
 
@@ -15,7 +15,7 @@ interface NewsArticle {
   title: string;
   description: string;
   publishedAt: string;
-  urlToImage: string | null;  // Keep this as urlToImage to match NewsCard props
+  urlToImage: string | null;
   source: { name: string };
   url: string;
 }
@@ -32,27 +32,42 @@ const fetchWeddingNews = async (searchQuery: string = "wedding") => {
     `&dataType=news` +
     `&apiKey=${API_KEY}`,
     {
+      method: 'GET',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
+        'Origin': window.location.origin,
       },
+      mode: 'cors',
     }
   );
   
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('API Error:', errorText);
+    throw new Error(`Failed to fetch news: ${response.status} ${response.statusText}`);
+  }
+
   const data = await response.json();
-  if (!response.ok || data.error) {
+  
+  if (data.error) {
+    console.error('API Error:', data.error);
     throw new Error(data.error || "Failed to fetch news");
   }
+
+  if (!data.articles || !Array.isArray(data.articles)) {
+    console.error('Invalid API response:', data);
+    throw new Error("Invalid API response format");
+  }
   
-  // Transform the response to match our existing interface
   return {
     articles: data.articles.map((article: any) => ({
-      title: article.title,
-      description: article.body,
-      publishedAt: article.dateTime,
-      urlToImage: article.image, // Map the API's 'image' to our interface's 'urlToImage'
-      source: { name: article.source.title },
-      url: article.url
+      title: article.title || 'No title available',
+      description: article.body || 'No description available',
+      publishedAt: article.dateTime || new Date().toISOString(),
+      urlToImage: article.image,
+      source: { name: article.source?.title || 'Unknown Source' },
+      url: article.url || '#'
     }))
   };
 };
@@ -65,6 +80,7 @@ const Index = () => {
     queryKey: ["news", searchQuery],
     queryFn: () => fetchWeddingNews(searchQuery),
     refetchInterval: 1000 * 60 * 60, // Refetch every hour
+    retry: 3,
     meta: {
       onError: (error: Error) => {
         toast({
