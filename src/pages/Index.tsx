@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { format, subDays } from 'date-fns';
 
 const API_KEY = "bfbdfc07-da15-462c-8bb9-64204801921c";
 
@@ -21,73 +22,41 @@ interface NewsArticle {
   body: string;
 }
 
-const fetchWeddingNews = async (searchQuery: string = "wedding") => {
-  try {
-    console.log('Fetching news with endpoint:', 'https://eventregistry.org/api/v1/article/getArticles');
-    const response = await fetch(
-      'https://eventregistry.org/api/v1/article/getArticles',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          action: "getArticles",
-          keyword: searchQuery,
-          articlesPage: 1,
-          articlesCount: 13,
-          articlesSortBy: "date",
-          articlesSortByAsc: false,
-          articleBodyLen: -1,
-          dataType: ["news", "pr"],
-          forceMaxDataTimeWindow: 31,
-          resultType: "articles",
-          apiKey: API_KEY
-        }),
-      }
-    );
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API Error:', errorText);
-      throw new Error(`Failed to fetch news: ${response.status} ${response.statusText}`);
+const fetchNews = async () => {
+  const response = await fetch(
+    'https://eventregistry.org/api/v1/article/getArticles',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: "getArticles",
+        keyword: ["wedding", "marriage ceremony", "bridal", "wedding planning", "wedding trends"],
+        keywordOper: "or",
+        categoryUri: ["news/Society/Lifestyle", "news/Society/Family"],
+        lang: "eng",
+        articlesPage: 1,
+        articlesCount: 12,
+        articlesSortBy: "date",
+        articlesSortByAsc: false,
+        articlesArticleBodyLen: -1,
+        resultType: "articles",
+        dataType: ["news", "blog"],
+        apiKey: API_KEY,
+        ignoreKeyword: ["divorce", "breakup", "scandal"],
+        dateStart: format(subDays(new Date(), 30), 'yyyy-MM-dd'), // Last 30 days
+        dateEnd: format(new Date(), 'yyyy-MM-dd')
+      }),
     }
+  );
 
-    const data = await response.json();
-    
-    if (data.error) {
-      console.error('API Error:', data.error);
-      throw new Error(data.error || "Failed to fetch news");
-    }
-
-    // Log the raw API response for debugging
-    console.log('Raw API Response:', data);
-
-    // Check for articles in the correct location of the response
-    const articles = data.articles?.results || [];
-    
-    if (!Array.isArray(articles)) {
-      console.error('Invalid API response format:', data);
-      throw new Error("Invalid API response format - articles not found");
-    }
-    
-    return {
-      articles: articles.map((article: any) => ({
-        title: article.title || 'No title available',
-        description: article.body || article.description || 'No description available',
-        publishedAt: article.dateTime || article.date || new Date().toISOString(),
-        urlToImage: article.image || article.url,
-        source: { name: article.source?.title || 'Unknown Source' },
-        url: article.url || '#',
-        uri: article.uri || '',  
-        body: article.body || article.description || ''
-      }))
-    };
-  } catch (error) {
-    console.error('Error fetching news:', error);
-    throw error;
+  if (!response.ok) {
+    throw new Error('Failed to fetch news');
   }
+
+  const data = await response.json();
+  return data.articles?.results || [];
 };
 
 const Index = () => {
@@ -95,8 +64,8 @@ const Index = () => {
   const { toast } = useToast();
   
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["news", searchQuery],
-    queryFn: () => fetchWeddingNews(searchQuery),
+    queryKey: ["news"],
+    queryFn: fetchNews,
     refetchInterval: 1000 * 60 * 60, // Refetch every hour
     retry: 3,
     meta: {
@@ -156,10 +125,10 @@ const Index = () => {
           </div>
         ) : (
           <>
-            {data?.articles?.[0] && <FeaturedNews article={data.articles[0]} />}
+            {data?.[0] && <FeaturedNews article={data[0]} />}
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
-              {data?.articles?.slice(1).map((article: NewsArticle) => (
+              {data?.slice(1).map((article: NewsArticle) => (
                 <NewsCard
                   key={article.title}
                   title={article.title}
