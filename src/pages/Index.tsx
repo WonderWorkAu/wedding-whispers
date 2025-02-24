@@ -35,20 +35,49 @@ const fetchNews = async () => {
         },
         body: JSON.stringify({
           action: "getArticles",
-          keyword: ["wedding", "marriage ceremony", "bridal", "wedding planning", "wedding trends"],
+          keyword: [
+            // Wedding related
+            "wedding", "bridal", "marriage ceremony", "wedding planning",
+            "wedding trends", "wedding fashion", "wedding design",
+            
+            // Luxury & Lifestyle
+            "luxury lifestyle", "luxury events", "luxury travel",
+            "luxury fashion", "high-end", "luxury experience",
+            "luxury celebration", "luxury venue",
+            
+            // Celebrations & Events
+            "celebration", "special events", "event planning",
+            "destination events", "luxury celebration",
+            
+            // Travel & Destinations
+            "destination wedding", "honeymoon destination",
+            "luxury destination", "travel experience",
+            
+            // Fashion & Style
+            "bridal fashion", "luxury fashion", "designer wedding",
+            "couture", "fashion trends"
+          ],
           keywordOper: "or",
-          categoryUri: ["news/Society/Lifestyle", "news/Society/Family"],
+          categoryUri: [
+            "news/Society/Lifestyle",
+            "news/Society/Family",
+            "news/Business/Industries/Tourism",
+            "news/Arts_and_Entertainment/Fashion",
+            "news/Lifestyle/Food_and_Dining"
+          ],
           lang: "eng",
           articlesPage: 1,
           articlesCount: 12,
           articlesSortBy: "date",
           articlesSortByAsc: false,
-          articlesArticleBodyLen: -1,
           resultType: "articles",
           dataType: ["news", "blog"],
           apiKey: API_KEY,
-          ignoreKeyword: ["divorce", "breakup", "scandal"],
-          dateStart: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
+          ignoreKeyword: [
+            "divorce", "breakup", "scandal", "controversy",
+            "budget wedding", "cheap", "affordable", "low-cost"
+          ],
+          dateStart: format(subDays(new Date(), 90), 'yyyy-MM-dd'), // Last 90 days
           dateEnd: format(new Date(), 'yyyy-MM-dd')
         }),
       }
@@ -67,6 +96,8 @@ const fetchNews = async () => {
     }
 
     const articles = data.articles?.results || [];
+    console.log('Processed articles:', articles);
+    
     return articles.map((article: any) => ({
       title: article.title || 'No title available',
       description: article.body || article.description || 'No description available',
