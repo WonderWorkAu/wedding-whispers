@@ -1,5 +1,5 @@
 
-import express, { Request, Response } from 'express';
+import express from 'express';
 import cors from 'cors';
 import { fetchArticleContent } from './articleFetcher';
 
@@ -9,7 +9,7 @@ const port = 3001;
 app.use(cors());
 app.use(express.json());
 
-app.get('/api/article', async (req: Request, res: Response) => {
+app.get('/api/article', async (req, res) => {
   try {
     const { url } = req.query;
     
