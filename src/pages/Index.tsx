@@ -66,16 +66,13 @@ const Index = () => {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["news"],
     queryFn: fetchNews,
-    refetchInterval: 1000 * 60 * 60, // Refetch every hour
+    refetchInterval: 1000 * 60 * 60, // 1 hour in milliseconds
+    refetchOnWindowFocus: false, // Prevent refetch on window focus
+    refetchOnMount: false, // Prevent refetch on component mount
+    staleTime: 1000 * 60 * 60, // Consider data fresh for 1 hour
     retry: 3,
     meta: {
-      onError: (error: Error) => {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
+      errorMessage: "Failed to fetch wedding news"
     }
   });
 
