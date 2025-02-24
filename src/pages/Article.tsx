@@ -1,10 +1,12 @@
 import { useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Clock, Globe, Share2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 interface ArticleState {
   title: string;
@@ -45,6 +47,72 @@ const fetchFullArticle = async (uri: string) => {
   return data.info;
 };
 
+const ArticleHeader = ({ article }: { article: ArticleState }) => (
+  <div className="space-y-4 mb-8">
+    <Button
+      variant="ghost"
+      size="sm"
+      className="mb-4"
+      onClick={() => window.history.back()}
+    >
+      <ArrowLeft className="h-4 w-4 mr-2" />
+      Back to News
+    </Button>
+    
+    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <Clock className="h-4 w-4" />
+      <time dateTime={article.publishedAt}>
+        {format(new Date(article.publishedAt), "MMMM d, yyyy")}
+      </time>
+      <span>•</span>
+      <Globe className="h-4 w-4" />
+      <span>{article.source.name}</span>
+    </div>
+    
+    <h1 className="text-4xl md:text-5xl font-serif leading-tight">{article.title}</h1>
+    
+    <p className="text-xl text-muted-foreground leading-relaxed">
+      {article.description}
+    </p>
+  </div>
+);
+
+const ArticleImage = ({ article }: { article: ArticleState }) => (
+  article.urlToImage && (
+    <div className="relative aspect-[16/9] mb-12 rounded-lg overflow-hidden">
+      <img
+        src={article.urlToImage}
+        alt={article.title}
+        className="w-full h-full object-cover"
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          target.src = "/placeholder.svg";
+        }}
+      />
+    </div>
+  )
+);
+
+const ShareButton = ({ url, title }: { url: string; title: string }) => (
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => {
+      if (navigator.share) {
+        navigator.share({
+          title: title,
+          url: url
+        });
+      } else {
+        navigator.clipboard.writeText(url);
+      }
+    }}
+  >
+    <Share2 className="h-4 w-4 mr-2" />
+    Share Article
+  </Button>
+);
+
 const Article = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -66,72 +134,58 @@ const Article = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 py-8">
-        <Button
-          variant="ghost"
-          className="mb-6"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to News
-        </Button>
+      <article className="container max-w-4xl mx-auto px-4 py-12">
+        <ArticleHeader article={article} />
+        <ArticleImage article={article} />
 
-        {article.urlToImage && (
-          <div className="relative h-[400px] w-full mb-8 rounded-lg overflow-hidden">
-            <img
-              src={article.urlToImage}
-              alt={article.title}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = "/placeholder.svg";
-              }}
-            />
-          </div>
-        )}
+        <div className="flex justify-between items-center mb-8">
+          <ShareButton url={article.url} title={article.title} />
+          <a
+            href={article.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-muted-foreground hover:text-primary"
+          >
+            View Original Article
+          </a>
+        </div>
 
-        <div className="prose prose-lg dark:prose-invert max-w-none">
-          <h1 className="font-serif mb-4">{article.title}</h1>
-          
-          <div className="flex items-center gap-2 text-muted-foreground mb-8">
-            <span>{format(new Date(article.publishedAt), "MMM dd, yyyy")}</span>
-            <span>•</span>
-            <span>{article.source.name}</span>
-          </div>
+        <Separator className="mb-8" />
 
+        <div className={cn(
+          "prose prose-lg dark:prose-invert max-w-none",
+          "prose-headings:font-serif prose-headings:font-normal",
+          "prose-p:leading-relaxed prose-p:text-balance",
+          "prose-img:rounded-lg",
+          "prose-a:text-primary prose-a:no-underline hover:prose-a:underline"
+        )}>
           {isLoading ? (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-2/3" />
             </div>
           ) : error ? (
             <div className="text-lg leading-relaxed">{article.description}</div>
           ) : (
-            <div className="space-y-4">
+            <div>
               {fullArticle?.body ? (
-                <div className="mt-8" dangerouslySetInnerHTML={{ __html: fullArticle.body }} />
+                <div dangerouslySetInnerHTML={{ 
+                  __html: fullArticle.body.replace(
+                    /<p>/g, 
+                    '<p class="text-lg leading-relaxed mb-6">'
+                  )
+                }} />
               ) : (
                 <div className="text-lg leading-relaxed">{article.description}</div>
               )}
             </div>
           )}
-
-          <div className="mt-8 pt-8 border-t">
-            <p className="text-sm text-muted-foreground">
-              Original article available at:{" "}
-              <a
-                href={article.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                {article.source.name}
-              </a>
-            </p>
-          </div>
         </div>
-      </main>
+      </article>
     </div>
   );
 };
