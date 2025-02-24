@@ -23,40 +23,64 @@ interface NewsArticle {
 }
 
 const fetchNews = async () => {
-  const response = await fetch(
-    'https://eventregistry.org/api/v1/article/getArticles',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        action: "getArticles",
-        keyword: ["wedding", "marriage ceremony", "bridal", "wedding planning", "wedding trends"],
-        keywordOper: "or",
-        categoryUri: ["news/Society/Lifestyle", "news/Society/Family"],
-        lang: "eng",
-        articlesPage: 1,
-        articlesCount: 12,
-        articlesSortBy: "date",
-        articlesSortByAsc: false,
-        articlesArticleBodyLen: -1,
-        resultType: "articles",
-        dataType: ["news", "blog"],
-        apiKey: API_KEY,
-        ignoreKeyword: ["divorce", "breakup", "scandal"],
-        dateStart: format(subDays(new Date(), 30), 'yyyy-MM-dd'), // Last 30 days
-        dateEnd: format(new Date(), 'yyyy-MM-dd')
-      }),
+  try {
+    console.log('Fetching news...');
+    const response = await fetch(
+      'https://eventregistry.org/api/v1/article/getArticles',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          action: "getArticles",
+          keyword: ["wedding", "marriage ceremony", "bridal", "wedding planning", "wedding trends"],
+          keywordOper: "or",
+          categoryUri: ["news/Society/Lifestyle", "news/Society/Family"],
+          lang: "eng",
+          articlesPage: 1,
+          articlesCount: 12,
+          articlesSortBy: "date",
+          articlesSortByAsc: false,
+          articlesArticleBodyLen: -1,
+          resultType: "articles",
+          dataType: ["news", "blog"],
+          apiKey: API_KEY,
+          ignoreKeyword: ["divorce", "breakup", "scandal"],
+          dateStart: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
+          dateEnd: format(new Date(), 'yyyy-MM-dd')
+        }),
+      }
+    );
+
+    console.log('Response status:', response.status);
+    const data = await response.json();
+    console.log('API Response:', data);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch news: ${response.status}`);
     }
-  );
 
-  if (!response.ok) {
-    throw new Error('Failed to fetch news');
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    const articles = data.articles?.results || [];
+    return articles.map((article: any) => ({
+      title: article.title || 'No title available',
+      description: article.body || article.description || 'No description available',
+      publishedAt: article.dateTime || article.date || new Date().toISOString(),
+      urlToImage: article.image || null,
+      source: { name: article.source?.title || 'Unknown Source' },
+      url: article.url || '#',
+      uri: article.uri || '',
+      body: article.body || article.description || ''
+    }));
+  } catch (error) {
+    console.error('Error fetching news:', error);
+    throw error;
   }
-
-  const data = await response.json();
-  return data.articles?.results || [];
 };
 
 const Index = () => {
@@ -66,13 +90,17 @@ const Index = () => {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["news"],
     queryFn: fetchNews,
-    refetchInterval: 1000 * 60 * 60, // 1 hour in milliseconds
-    refetchOnWindowFocus: false, // Prevent refetch on window focus
-    refetchOnMount: false, // Prevent refetch on component mount
-    staleTime: 1000 * 60 * 60, // Consider data fresh for 1 hour
+    refetchInterval: 1000 * 60 * 60,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 1000 * 60 * 60,
     retry: 3,
-    meta: {
-      errorMessage: "Failed to fetch wedding news"
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch wedding news",
+        variant: "destructive",
+      });
     }
   });
 
