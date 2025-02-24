@@ -22,7 +22,7 @@ interface NewsArticle {
 const fetchWeddingNews = async (searchQuery: string = "wedding") => {
   try {
     const response = await fetch(
-      `https://api.newsapi.ai/api/v1/article/getArticles?` + 
+      `https://eventregistry.org/api/v1/article/getArticles?` + 
       `query=${encodeURIComponent(`${searchQuery} AND lang:eng`)}` +
       `&articlesPage=1` +
       `&articlesCount=13` +
