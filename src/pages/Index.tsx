@@ -1,8 +1,13 @@
 
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { NewsCard } from "@/components/NewsCard";
 import { FeaturedNews } from "@/components/FeaturedNews";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 const API_KEY = "f9f8ac8809a140818588f770f239a84c";
 
@@ -15,25 +20,49 @@ interface NewsArticle {
   url: string;
 }
 
-const fetchWeddingNews = async () => {
+const fetchWeddingNews = async (searchQuery: string = "wedding") => {
+  const today = new Date().toISOString().split('T')[0];
   const response = await fetch(
-    `https://newsapi.org/v2/everything?q=wedding&apiKey=${API_KEY}&pageSize=13&language=en&sortBy=publishedAt`
+    `https://newsapi.org/v2/everything?` + 
+    `q=${encodeURIComponent(searchQuery)}` +
+    `&from=${today}` +
+    `&sortBy=popularity` +
+    `&pageSize=13` +
+    `&language=en` +
+    `&apiKey=${API_KEY}`
   );
+  
   if (!response.ok) {
-    throw new Error("Network response was not ok");
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || "Failed to fetch news");
   }
+  
   return response.json();
 };
 
 const Index = () => {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["weddingNews"],
-    queryFn: fetchWeddingNews,
+  const [searchQuery, setSearchQuery] = useState("wedding");
+  const { toast } = useToast();
+  
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["news", searchQuery],
+    queryFn: () => fetchWeddingNews(searchQuery),
     refetchInterval: 1000 * 60 * 60, // Refetch every hour
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to fetch news",
+        variant: "destructive",
+      });
+    },
   });
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    refetch();
+  };
+
   if (error) {
-    console.error("Error fetching news:", error);
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-lg text-gray-600">Unable to load wedding news at this time.</p>
@@ -46,7 +75,21 @@ const Index = () => {
       <main className="container mx-auto px-4 py-8">
         <header className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-serif mb-4">Wedded Wonderland</h1>
-          <p className="text-muted-foreground">Your Daily Source for Wedding News & Inspiration</p>
+          <p className="text-muted-foreground mb-8">Your Daily Source for Wedding News & Inspiration</p>
+          
+          <form onSubmit={handleSearch} className="max-w-2xl mx-auto flex gap-2">
+            <Input
+              type="text"
+              placeholder="Search wedding news..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1"
+            />
+            <Button type="submit">
+              <Search className="h-4 w-4 mr-2" />
+              Search
+            </Button>
+          </form>
         </header>
 
         {isLoading ? (
