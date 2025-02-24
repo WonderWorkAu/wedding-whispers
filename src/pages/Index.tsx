@@ -15,7 +15,7 @@ interface NewsArticle {
   title: string;
   description: string;
   publishedAt: string;
-  image: string | null;
+  urlToImage: string | null;  // Keep this as urlToImage to match NewsCard props
   source: { name: string };
   url: string;
 }
@@ -50,7 +50,7 @@ const fetchWeddingNews = async (searchQuery: string = "wedding") => {
       title: article.title,
       description: article.body,
       publishedAt: article.dateTime,
-      urlToImage: article.image,
+      urlToImage: article.image, // Map the API's 'image' to our interface's 'urlToImage'
       source: { name: article.source.title },
       url: article.url
     }))
