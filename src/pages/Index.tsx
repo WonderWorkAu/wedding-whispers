@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { NewsCard } from "@/components/NewsCard";
@@ -21,55 +20,66 @@ interface NewsArticle {
 }
 
 const fetchWeddingNews = async (searchQuery: string = "wedding") => {
-  const response = await fetch(
-    `https://api.newsapi.ai/api/v1/article/getArticles?` + 
-    `query=${encodeURIComponent(`${searchQuery} AND lang:eng`)}` +
-    `&articlesPage=1` +
-    `&articlesCount=13` +
-    `&articlesSortBy=date` +
-    `&articleBodyLen=-1` +
-    `&resultType=articles` +
-    `&dataType=news` +
-    `&apiKey=${API_KEY}`,
-    {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Origin': window.location.origin,
-      },
-      mode: 'cors',
+  try {
+    const response = await fetch(
+      `https://api.newsapi.ai/api/v1/article/getArticles?` + 
+      `query=${encodeURIComponent(`${searchQuery} AND lang:eng`)}` +
+      `&articlesPage=1` +
+      `&articlesCount=13` +
+      `&articlesSortBy=date` +
+      `&articleBodyLen=-1` +
+      `&resultType=articles` +
+      `&dataType=news` +
+      `&apiKey=${API_KEY}`,
+      {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Origin': window.location.origin,
+        },
+        mode: 'cors',
+      }
+    );
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error:', errorText);
+      throw new Error(`Failed to fetch news: ${response.status} ${response.statusText}`);
     }
-  );
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('API Error:', errorText);
-    throw new Error(`Failed to fetch news: ${response.status} ${response.statusText}`);
-  }
 
-  const data = await response.json();
-  
-  if (data.error) {
-    console.error('API Error:', data.error);
-    throw new Error(data.error || "Failed to fetch news");
-  }
+    const data = await response.json();
+    
+    if (data.error) {
+      console.error('API Error:', data.error);
+      throw new Error(data.error || "Failed to fetch news");
+    }
 
-  if (!data.articles || !Array.isArray(data.articles)) {
-    console.error('Invalid API response:', data);
-    throw new Error("Invalid API response format");
+    // Log the raw API response for debugging
+    console.log('Raw API Response:', data);
+
+    // Check for articles in the correct location of the response
+    const articles = data.articles?.articles || data.articles || [];
+    
+    if (!Array.isArray(articles)) {
+      console.error('Invalid API response format:', data);
+      throw new Error("Invalid API response format - articles not found");
+    }
+    
+    return {
+      articles: articles.map((article: any) => ({
+        title: article.title || 'No title available',
+        description: article.body || article.description || 'No description available',
+        publishedAt: article.dateTime || article.publishedAt || new Date().toISOString(),
+        urlToImage: article.image || article.urlToImage,
+        source: { name: article.source?.title || article.source?.name || 'Unknown Source' },
+        url: article.url || '#'
+      }))
+    };
+  } catch (error) {
+    console.error('Error fetching news:', error);
+    throw error;
   }
-  
-  return {
-    articles: data.articles.map((article: any) => ({
-      title: article.title || 'No title available',
-      description: article.body || 'No description available',
-      publishedAt: article.dateTime || new Date().toISOString(),
-      urlToImage: article.image,
-      source: { name: article.source?.title || 'Unknown Source' },
-      url: article.url || '#'
-    }))
-  };
 };
 
 const Index = () => {
