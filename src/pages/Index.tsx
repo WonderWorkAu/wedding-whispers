@@ -17,6 +17,7 @@ interface NewsArticle {
   urlToImage: string | null;
   source: { name: string };
   url: string;
+  body: string;
 }
 
 const fetchWeddingNews = async (searchQuery: string = "wedding") => {
@@ -77,7 +78,8 @@ const fetchWeddingNews = async (searchQuery: string = "wedding") => {
         publishedAt: article.dateTime || article.date || new Date().toISOString(),
         urlToImage: article.image || article.url,
         source: { name: article.source?.title || 'Unknown Source' },
-        url: article.url || '#'
+        url: article.url || '#',
+        body: article.body || article.description || ''
       }))
     };
   } catch (error) {
@@ -164,6 +166,7 @@ const Index = () => {
                   urlToImage={article.urlToImage}
                   source={article.source.name}
                   url={article.url}
+                  body={article.body}
                 />
               ))}
             </div>

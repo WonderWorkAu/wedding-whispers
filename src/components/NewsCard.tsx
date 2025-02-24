@@ -1,6 +1,6 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
+import { useNavigate } from 'react-router-dom';
 
 interface NewsCardProps {
   title: string;
@@ -9,11 +9,31 @@ interface NewsCardProps {
   urlToImage: string | null;
   source: string;
   url: string;
+  body?: string;
 }
 
-export const NewsCard = ({ title, description, publishedAt, urlToImage, source, url }: NewsCardProps) => {
+export const NewsCard = ({ title, description, publishedAt, urlToImage, source, url, body }: NewsCardProps) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate('/article', {
+      state: {
+        title,
+        description,
+        publishedAt,
+        urlToImage,
+        source: { name: source },
+        url,
+        body
+      }
+    });
+  };
+
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer" className="block transition-transform duration-300 hover:-translate-y-1">
+    <div 
+      onClick={handleClick}
+      className="block transition-transform duration-300 hover:-translate-y-1 cursor-pointer"
+    >
       <Card className="overflow-hidden h-full">
         {urlToImage && (
           <div className="relative h-48 overflow-hidden">
@@ -38,6 +58,6 @@ export const NewsCard = ({ title, description, publishedAt, urlToImage, source, 
           <CardDescription className="line-clamp-3">{description}</CardDescription>
         </CardContent>
       </Card>
-    </a>
+    </div>
   );
 };
