@@ -21,8 +21,9 @@ interface NewsArticle {
 
 const fetchWeddingNews = async (searchQuery: string = "wedding") => {
   try {
+    console.log('Fetching news with endpoint:', 'https://eventregistry.org/api/v1/article/getArticles');
     const response = await fetch(
-      `https://eventregistry.org/api/v1/article/getArticles`,
+      'https://eventregistry.org/api/v1/article/getArticles',
       {
         method: 'POST',
         headers: {
