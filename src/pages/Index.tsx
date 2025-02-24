@@ -9,26 +9,27 @@ import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
-const API_KEY = "f9f8ac8809a140818588f770f239a84c";
+const API_KEY = "bfbdfc07-da15-462c-8bb9-64204801921c";
 
 interface NewsArticle {
   title: string;
   description: string;
   publishedAt: string;
-  urlToImage: string | null;
+  image: string | null;
   source: { name: string };
   url: string;
 }
 
 const fetchWeddingNews = async (searchQuery: string = "wedding") => {
-  const today = new Date().toISOString().split('T')[0];
   const response = await fetch(
-    `https://newsapi.org/v2/everything?` + 
-    `q=${encodeURIComponent(searchQuery)}` +
-    `&from=${today}` +
-    `&sortBy=popularity` +
-    `&pageSize=13` +
-    `&language=en` +
+    `https://api.newsapi.ai/api/v1/article/getArticles?` + 
+    `query=${encodeURIComponent(`${searchQuery} AND lang:eng`)}` +
+    `&articlesPage=1` +
+    `&articlesCount=13` +
+    `&articlesSortBy=date` +
+    `&articleBodyLen=-1` +
+    `&resultType=articles` +
+    `&dataType=news` +
     `&apiKey=${API_KEY}`,
     {
       headers: {
@@ -39,11 +40,21 @@ const fetchWeddingNews = async (searchQuery: string = "wedding") => {
   );
   
   const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to fetch news");
+  if (!response.ok || data.error) {
+    throw new Error(data.error || "Failed to fetch news");
   }
   
-  return data;
+  // Transform the response to match our existing interface
+  return {
+    articles: data.articles.map((article: any) => ({
+      title: article.title,
+      description: article.body,
+      publishedAt: article.dateTime,
+      urlToImage: article.image,
+      source: { name: article.source.title },
+      url: article.url
+    }))
+  };
 };
 
 const Index = () => {
@@ -73,7 +84,7 @@ const Index = () => {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-lg text-gray-600">Unable to load wedding news at this time. The NewsAPI free tier only works on localhost during development.</p>
+        <p className="text-lg text-gray-600">Unable to load wedding news at this time. Please try again later.</p>
       </div>
     );
   }
@@ -134,4 +145,3 @@ const Index = () => {
 };
 
 export default Index;
-
