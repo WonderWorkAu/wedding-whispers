@@ -93,6 +93,27 @@ app.get('/api/article', async (req, res) => {
   }
 });
 
+app.get('/api/news', async (req, res) => {
+  try {
+    const { api_key, ...params } = req.query;
+    
+    const response = await axios.get('https://serpapi.com/search', {
+      params: {
+        api_key,
+        ...params
+      }
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error fetching news:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch news',
+      details: error.message 
+    });
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
