@@ -2,46 +2,83 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { format } from "date-fns";
 import { useNavigate } from 'react-router-dom';
 
-interface NewsCardProps {
+interface Article {
   title: string;
   description: string;
   publishedAt: string;
   urlToImage: string | null;
-  source: string;
+  source: { name: string };
   url: string;
-  uri: string;
+  uri?: string;
   body?: string;
 }
 
-export const NewsCard = ({ title, description, publishedAt, urlToImage, source, url, uri, body }: NewsCardProps) => {
-  const navigate = useNavigate();
+interface NewsCardProps {
+  article: Article;
+}
 
+export const NewsCard = ({ article }: NewsCardProps) => {
+  const navigate = useNavigate();
+  
   const handleClick = () => {
-    navigate('/article', {
-      state: {
-        title,
-        description,
-        publishedAt,
-        urlToImage,
-        source: { name: source },
-        url,
-        uri,
-        body
+    navigate('/article', { state: article });
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Recent';
+    
+    try {
+      // First try parsing as is
+      let date = new Date(dateString);
+      
+      // Check if it's a valid date
+      if (!isNaN(date.getTime())) {
+        return format(date, 'MMMM d, yyyy');
       }
-    });
+      
+      // Try parsing "X time ago" format (e.g., "2 hours ago", "3 days ago")
+      const timeAgoMatch = dateString.match(/(\d+)\s+(hour|day|week|month|year)s?\s+ago/i);
+      if (timeAgoMatch) {
+        const [_, amount, unit] = timeAgoMatch;
+        const now = new Date();
+        switch(unit.toLowerCase()) {
+          case 'hour':
+            now.setHours(now.getHours() - parseInt(amount));
+            break;
+          case 'day':
+            now.setDate(now.getDate() - parseInt(amount));
+            break;
+          case 'week':
+            now.setDate(now.getDate() - (parseInt(amount) * 7));
+            break;
+          case 'month':
+            now.setMonth(now.getMonth() - parseInt(amount));
+            break;
+          case 'year':
+            now.setFullYear(now.getFullYear() - parseInt(amount));
+            break;
+        }
+        return format(now, 'MMMM d, yyyy');
+      }
+
+      return 'Recent';
+    } catch (error) {
+      console.error('Date parsing error:', error);
+      return 'Recent';
+    }
   };
 
   return (
     <div 
+      className="block transition-transform duration-300 hover:-translate-y-1 cursor-pointer group"
       onClick={handleClick}
-      className="block transition-transform duration-300 hover:-translate-y-1 cursor-pointer"
     >
       <Card className="overflow-hidden h-full">
-        {urlToImage && (
+        {article.urlToImage && (
           <div className="relative h-48 overflow-hidden">
             <img
-              src={urlToImage}
-              alt={title}
+              src={article.urlToImage}
+              alt={article.title}
               className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -52,12 +89,12 @@ export const NewsCard = ({ title, description, publishedAt, urlToImage, source, 
         )}
         <CardHeader className="space-y-2">
           <div className="text-sm text-muted-foreground">
-            {format(new Date(publishedAt), "MMM dd, yyyy")} • {source}
+            {formatDate(article.publishedAt)} • {article.source.name}
           </div>
-          <CardTitle className="line-clamp-2 font-serif">{title}</CardTitle>
+          <CardTitle className="line-clamp-2 font-serif">{article.title}</CardTitle>
         </CardHeader>
         <CardContent>
-          <CardDescription className="line-clamp-3">{description}</CardDescription>
+          <CardDescription className="line-clamp-3">{article.description}</CardDescription>
         </CardContent>
       </Card>
     </div>

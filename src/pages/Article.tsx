@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { Separator } from '@/components/ui/separator';
 
 interface ArticleState {
   title: string;
@@ -15,113 +14,71 @@ interface ArticleState {
   urlToImage: string | null;
   source: { name: string };
   url: string;
-  uri: string;
 }
 
-const API_KEY = "bfbdfc07-da15-462c-8bb9-64204801921c";
-
-const fetchFullArticle = async (uri: string) => {
-  const response = await fetch(
-    'https://eventregistry.org/api/v1/article/getArticle',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        action: "getArticle",
-        articleUri: uri,
-        infoArticleBodyLen: -1,
-        resultType: "info",
-        apiKey: API_KEY
-      }),
+const fetchArticleContent = async (url: string) => {
+  try {
+    const response = await fetch(`/api/article?url=${encodeURIComponent(url)}`);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.details || 'Failed to fetch article content');
     }
-  );
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch full article');
+    return response.json();
+  } catch (error) {
+    console.error('Error fetching article:', error);
+    throw error;
   }
-
-  const data = await response.json();
-  return data.info;
 };
 
-const ArticleHeader = ({ article }: { article: ArticleState }) => (
-  <div className="space-y-4 mb-8">
-    <Button
-      variant="ghost"
-      size="sm"
-      className="mb-4"
-      onClick={() => window.history.back()}
-    >
-      <ArrowLeft className="h-4 w-4 mr-2" />
-      Back to News
-    </Button>
+const formatDate = (dateString: string | null) => {
+  if (!dateString) return 'Recent';
+  
+  try {
+    let date = new Date(dateString);
+    if (!isNaN(date.getTime())) {
+      return format(date, 'MMMM d, yyyy');
+    }
     
-    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-      <Clock className="h-4 w-4" />
-      <time dateTime={article.publishedAt}>
-        {format(new Date(article.publishedAt), "MMMM d, yyyy")}
-      </time>
-      <span>•</span>
-      <Globe className="h-4 w-4" />
-      <span>{article.source.name}</span>
-    </div>
-    
-    <h1 className="text-4xl md:text-5xl font-serif leading-tight">{article.title}</h1>
-    
-    <p className="text-xl text-muted-foreground leading-relaxed">
-      {article.description}
-    </p>
-  </div>
-);
-
-const ArticleImage = ({ article }: { article: ArticleState }) => (
-  article.urlToImage && (
-    <div className="relative aspect-[16/9] mb-12 rounded-lg overflow-hidden">
-      <img
-        src={article.urlToImage}
-        alt={article.title}
-        className="w-full h-full object-cover"
-        onError={(e) => {
-          const target = e.target as HTMLImageElement;
-          target.src = "/placeholder.svg";
-        }}
-      />
-    </div>
-  )
-);
-
-const ShareButton = ({ url, title }: { url: string; title: string }) => (
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={() => {
-      if (navigator.share) {
-        navigator.share({
-          title: title,
-          url: url
-        });
-      } else {
-        navigator.clipboard.writeText(url);
+    const timeAgoMatch = dateString.match(/(\d+)\s+(hour|day|week|month|year)s?\s+ago/i);
+    if (timeAgoMatch) {
+      const [_, amount, unit] = timeAgoMatch;
+      const now = new Date();
+      switch(unit.toLowerCase()) {
+        case 'hour':
+          now.setHours(now.getHours() - parseInt(amount));
+          break;
+        case 'day':
+          now.setDate(now.getDate() - parseInt(amount));
+          break;
+        case 'week':
+          now.setDate(now.getDate() - (parseInt(amount) * 7));
+          break;
+        case 'month':
+          now.setMonth(now.getMonth() - parseInt(amount));
+          break;
+        case 'year':
+          now.setFullYear(now.getFullYear() - parseInt(amount));
+          break;
       }
-    }}
-  >
-    <Share2 className="h-4 w-4 mr-2" />
-    Share Article
-  </Button>
-);
+      return format(now, 'MMMM d, yyyy');
+    }
+
+    return 'Recent';
+  } catch (error) {
+    console.error('Date parsing error:', error);
+    return 'Recent';
+  }
+};
 
 const Article = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const article = location.state as ArticleState;
 
-  const { data: fullArticle, isLoading, error } = useQuery({
-    queryKey: ['article', article?.uri],
-    queryFn: () => fetchFullArticle(article?.uri),
-    enabled: !!article?.uri,
+  const { data: fullArticle, isLoading } = useQuery({
+    queryKey: ['article', article?.url],
+    queryFn: () => fetchArticleContent(article?.url),
+    enabled: !!article?.url,
   });
 
   if (!article) {
@@ -135,55 +92,91 @@ const Article = () => {
   return (
     <div className="min-h-screen bg-background">
       <article className="container max-w-4xl mx-auto px-4 py-12">
-        <ArticleHeader article={article} />
-        <ArticleImage article={article} />
-
-        <div className="flex justify-between items-center mb-8">
-          <ShareButton url={article.url} title={article.title} />
-          <a
-            href={article.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-muted-foreground hover:text-primary"
+        <div className="space-y-8 mb-12">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(-1)}
+            className="mb-4"
           >
-            View Original Article
-          </a>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to News
+          </Button>
+
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              <time dateTime={article.publishedAt}>
+                {formatDate(article.publishedAt)}
+              </time>
+              <span>•</span>
+              <Globe className="h-4 w-4" />
+              <span>{article.source.name}</span>
+            </div>
+
+            <h1 className="text-4xl md:text-5xl font-serif leading-tight">
+              {article.title}
+            </h1>
+
+            {article.urlToImage && (
+              <div className="relative aspect-[16/9] rounded-lg overflow-hidden bg-muted">
+                <img
+                  src={article.urlToImage}
+                  alt={article.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = "/placeholder.svg";
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </div>
 
-        <Separator className="mb-8" />
-
-        <div className={cn(
-          "prose prose-lg dark:prose-invert max-w-none",
-          "prose-headings:font-serif prose-headings:font-normal",
-          "prose-p:leading-relaxed prose-p:text-balance",
-          "prose-img:rounded-lg",
-          "prose-a:text-primary prose-a:no-underline hover:prose-a:underline"
-        )}>
+        <div className="space-y-8">
           {isLoading ? (
-            <div className="space-y-6">
+            <div className="space-y-4">
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-2/3" />
             </div>
-          ) : error ? (
-            <div className="text-lg leading-relaxed">{article.description}</div>
-          ) : (
-            <div>
-              {fullArticle?.body ? (
-                <div dangerouslySetInnerHTML={{ 
-                  __html: fullArticle.body.replace(
-                    /<p>/g, 
-                    '<p class="text-lg leading-relaxed mb-6">'
-                  )
-                }} />
-              ) : (
-                <div className="text-lg leading-relaxed">{article.description}</div>
+          ) : fullArticle ? (
+            <div 
+              className={cn(
+                "prose prose-lg dark:prose-invert max-w-none",
+                "prose-headings:font-serif prose-headings:font-normal",
+                "prose-p:leading-relaxed prose-p:text-balance",
+                "prose-img:rounded-lg",
+                "prose-a:text-primary prose-a:no-underline hover:prose-a:underline"
               )}
+              dangerouslySetInnerHTML={{ __html: fullArticle.content }}
+            />
+          ) : (
+            <div className="prose prose-lg dark:prose-invert max-w-none">
+              <p className="text-lg leading-relaxed">{article.description}</p>
             </div>
           )}
+
+          <div className="flex justify-between items-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({
+                    title: article.title,
+                    url: article.url
+                  });
+                } else {
+                  navigator.clipboard.writeText(article.url);
+                }
+              }}
+            >
+              <Share2 className="h-4 w-4 mr-2" />
+              Share Article
+            </Button>
+          </div>
         </div>
       </article>
     </div>

@@ -7,51 +7,38 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, subDays } from 'date-fns';
 
-const API_KEY = "bfbdfc07-da15-462c-8bb9-64204801921c";
+const API_KEY = "ddb1e9326c8cdb699171fba8b76e2522b9afd34ce03922635bff94d557057484";
 
-interface NewsArticle {
+interface Article {
   title: string;
   description: string;
   publishedAt: string;
   urlToImage: string | null;
   source: { name: string };
   url: string;
-  uri: string;
-  body: string;
+  uri?: string;
+  body?: string;
 }
 
-const fetchNews = async () => {
+const fetchNews = async (searchQuery: string = "luxury wedding") => {
   try {
     console.log('Fetching news...');
+    const params = new URLSearchParams({
+      api_key: API_KEY,
+      q: `${searchQuery} (wedding OR bridal OR "luxury wedding" OR "destination wedding")`,
+      engine: "google_news",
+      gl: "us",
+      hl: "en",
+      num: "12"
+    });
+
     const response = await fetch(
-      'https://eventregistry.org/api/v1/article/getArticles',
+      `/api/news?${params.toString()}`,
       {
-        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          action: "getArticles",
-          keyword: [
-            "wedding",
-            "luxury wedding",
-            "bridal",
-            "destination wedding",
-            "wedding trends"
-          ],
-          keywordOper: "or",
-          lang: "eng",
-          articlesPage: 1,
-          articlesCount: 12,
-          articlesSortBy: "date",
-          articlesSortByAsc: false,
-          resultType: "articles",
-          dataType: ["news", "blog"],
-          apiKey: API_KEY
-        }),
+        }
       }
     );
 
@@ -67,18 +54,20 @@ const fetchNews = async () => {
       throw new Error(data.error);
     }
 
-    const articles = data.articles?.results || [];
+    const articles = data.news_results || [];
     console.log('Processed articles:', articles);
     
     return articles.map((article: any) => ({
       title: article.title || 'No title available',
-      description: article.body || article.description || 'No description available',
-      publishedAt: article.dateTime || article.date || new Date().toISOString(),
-      urlToImage: article.image || null,
-      source: { name: article.source?.title || 'Unknown Source' },
-      url: article.url || '#',
-      uri: article.uri || '',
-      body: article.body || article.description || ''
+      description: article.snippet || 'No description available',
+      publishedAt: article.date || new Date().toISOString(),
+      urlToImage: article.thumbnail || article.thumbnail_small || null,
+      source: { 
+        name: article.source?.name || article.source?.title || 'Unknown Source'
+      },
+      url: article.link || '#',
+      uri: article.story_token || '',
+      body: article.snippet || 'No content available'
     }));
   } catch (error) {
     console.error('Error fetching news:', error);
@@ -87,13 +76,13 @@ const fetchNews = async () => {
 };
 
 const Index = () => {
-  const [searchQuery, setSearchQuery] = useState("wedding");
+  const [searchQuery, setSearchQuery] = useState("luxury wedding");
   const { toast } = useToast();
   
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["news"],
-    queryFn: fetchNews,
-    refetchInterval: 1000 * 60 * 60,
+    queryKey: ["news", searchQuery],
+    queryFn: () => fetchNews(searchQuery),
+    refetchInterval: 1000 * 60 * 60, // 1 hour
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     staleTime: 1000 * 60 * 60,
@@ -156,17 +145,10 @@ const Index = () => {
             {data?.[0] && <FeaturedNews article={data[0]} />}
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
-              {data?.slice(1).map((article: NewsArticle) => (
+              {data?.slice(1).map((article: Article) => (
                 <NewsCard
                   key={article.title}
-                  title={article.title}
-                  description={article.description}
-                  publishedAt={article.publishedAt}
-                  urlToImage={article.urlToImage}
-                  source={article.source.name}
-                  url={article.url}
-                  uri={article.uri}
-                  body={article.body}
+                  article={article}
                 />
               ))}
             </div>
