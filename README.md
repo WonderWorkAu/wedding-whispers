@@ -62,7 +62,20 @@ This project is built with .
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/5f0254df-1261-422c-a08b-45c7a5c7c40b) and click on Share -> Publish.
+### Frontend (Vercel)
+
+1. Push your code to GitHub
+2. Connect your repository to Vercel
+3. Add environment variables in Vercel dashboard
+4. Deploy!
+
+### Backend (Railway)
+
+1. Create a new project on Railway
+2. Connect your repository
+3. Add environment variables:
+   - PORT=3001
+4. Deploy!
 
 ## I want to use a custom domain - is that possible?
 

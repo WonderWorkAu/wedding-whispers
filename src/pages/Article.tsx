@@ -18,7 +18,8 @@ interface ArticleState {
 
 const fetchArticleContent = async (url: string) => {
   try {
-    const response = await fetch(`/api/article?url=${encodeURIComponent(url)}`);
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    const response = await fetch(`${apiUrl}/api/article?url=${encodeURIComponent(url)}`);
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.details || 'Failed to fetch article content');

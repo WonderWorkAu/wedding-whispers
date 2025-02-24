@@ -5,9 +5,29 @@ import { Readability } from '@mozilla/readability';
 import axios from 'axios';
 
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
 
-app.use(cors());
+// Configure CORS to only allow requests from your frontend domain
+const allowedOrigins = [
+  'http://localhost:8080',
+  'http://localhost:3000',
+  'https://wedding-whispers.vercel.app', // Add your production domain here
+];
+
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 
 async function fetchArticleContent(url) {
@@ -71,6 +91,11 @@ app.get('/api/article', async (req, res) => {
       details: error.message 
     });
   }
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
 });
 
 app.listen(port, () => {
