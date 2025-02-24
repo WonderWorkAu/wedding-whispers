@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { NewsCard } from "@/components/NewsCard";
@@ -24,31 +25,25 @@ interface Article {
 const fetchNews = async (searchQuery: string = "luxury wedding") => {
   try {
     console.log('Fetching news...');
-    const params = new URLSearchParams({
-      api_key: API_KEY,
-      q: `${searchQuery} (wedding OR bridal OR "luxury wedding" OR "destination wedding")`,
-      engine: "google_news",
-      gl: "us",
-      hl: "en",
-      num: "12"
+    const encodedQuery = encodeURIComponent(`${searchQuery} (wedding OR bridal OR "luxury wedding" OR "destination wedding")`);
+    
+    const url = `https://serpapi.com/search.json?api_key=${API_KEY}&q=${encodedQuery}&engine=google_news&gl=us&hl=en&num=12`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
     });
 
-    const response = await fetch(
-      `/api/news?${params.toString()}`,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      }
-    );
-
     console.log('Response status:', response.status);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
     const data = await response.json();
     console.log('API Response:', data);
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch news: ${response.status}`);
-    }
 
     if (data.error) {
       throw new Error(data.error);
@@ -88,6 +83,7 @@ const Index = () => {
     staleTime: 1000 * 60 * 60,
     retry: 3,
     onError: (error: any) => {
+      console.error('Query error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to fetch wedding news",
@@ -160,3 +156,4 @@ const Index = () => {
 };
 
 export default Index;
+
