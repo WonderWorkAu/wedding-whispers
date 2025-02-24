@@ -11,7 +11,8 @@ const port = process.env.PORT || 3001;
 const allowedOrigins = [
   'http://localhost:8080',
   'http://localhost:3000',
-  'https://wedding-whispers.vercel.app', // Add your production domain here
+  'https://wedding-whispers-62qd5bh2x-wonderworks-projects.vercel.app',
+  'https://wedding-whispers-psi.vercel.app'
 ];
 
 app.use(cors({
