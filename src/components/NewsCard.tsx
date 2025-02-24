@@ -9,10 +9,11 @@ interface NewsCardProps {
   urlToImage: string | null;
   source: string;
   url: string;
+  uri: string;
   body?: string;
 }
 
-export const NewsCard = ({ title, description, publishedAt, urlToImage, source, url, body }: NewsCardProps) => {
+export const NewsCard = ({ title, description, publishedAt, urlToImage, source, url, uri, body }: NewsCardProps) => {
   const navigate = useNavigate();
 
   const handleClick = () => {
@@ -24,6 +25,7 @@ export const NewsCard = ({ title, description, publishedAt, urlToImage, source, 
         urlToImage,
         source: { name: source },
         url,
+        uri,
         body
       }
     });

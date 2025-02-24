@@ -10,6 +10,7 @@ interface FeaturedNewsProps {
     url: string;
     publishedAt: string;
     source: { name: string };
+    uri: string;
     body?: string;
   };
 }

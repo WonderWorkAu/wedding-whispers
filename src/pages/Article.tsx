@@ -3,6 +3,8 @@ import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ArticleState {
   title: string;
@@ -11,13 +13,48 @@ interface ArticleState {
   urlToImage: string | null;
   source: { name: string };
   url: string;
-  body?: string;
+  uri: string;
 }
+
+const API_KEY = "bfbdfc07-da15-462c-8bb9-64204801921c";
+
+const fetchFullArticle = async (uri: string) => {
+  const response = await fetch(
+    'https://eventregistry.org/api/v1/article/getArticle',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        action: "getArticle",
+        articleUri: uri,
+        infoArticleBodyLen: -1,
+        resultType: "info",
+        apiKey: API_KEY
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch full article');
+  }
+
+  const data = await response.json();
+  return data.info;
+};
 
 const Article = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const article = location.state as ArticleState;
+
+  const { data: fullArticle, isLoading, error } = useQuery({
+    queryKey: ['article', article?.uri],
+    queryFn: () => fetchFullArticle(article?.uri),
+    enabled: !!article?.uri,
+  });
 
   if (!article) {
     return (
@@ -62,12 +99,23 @@ const Article = () => {
             <span>{article.source.name}</span>
           </div>
 
-          <div className="space-y-4">
-            <p className="text-lg leading-relaxed">{article.description}</p>
-            {article.body && (
-              <div className="mt-8" dangerouslySetInnerHTML={{ __html: article.body }} />
-            )}
-          </div>
+          {isLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
+          ) : error ? (
+            <div className="text-lg leading-relaxed">{article.description}</div>
+          ) : (
+            <div className="space-y-4">
+              {fullArticle?.body ? (
+                <div className="mt-8" dangerouslySetInnerHTML={{ __html: fullArticle.body }} />
+              ) : (
+                <div className="text-lg leading-relaxed">{article.description}</div>
+              )}
+            </div>
+          )}
 
           <div className="mt-8 pt-8 border-t">
             <p className="text-sm text-muted-foreground">

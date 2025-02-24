@@ -17,6 +17,7 @@ interface NewsArticle {
   urlToImage: string | null;
   source: { name: string };
   url: string;
+  uri: string;
   body: string;
 }
 
@@ -79,6 +80,7 @@ const fetchWeddingNews = async (searchQuery: string = "wedding") => {
         urlToImage: article.image || article.url,
         source: { name: article.source?.title || 'Unknown Source' },
         url: article.url || '#',
+        uri: article.uri || '',  
         body: article.body || article.description || ''
       }))
     };
@@ -166,6 +168,7 @@ const Index = () => {
                   urlToImage={article.urlToImage}
                   source={article.source.name}
                   url={article.url}
+                  uri={article.uri}
                   body={article.body}
                 />
               ))}
