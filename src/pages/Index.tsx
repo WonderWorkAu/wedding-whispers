@@ -22,23 +22,26 @@ interface NewsArticle {
 const fetchWeddingNews = async (searchQuery: string = "wedding") => {
   try {
     const response = await fetch(
-      `https://eventregistry.org/api/v1/article/getArticles?` + 
-      `query=${encodeURIComponent(`${searchQuery} AND lang:eng`)}` +
-      `&articlesPage=1` +
-      `&articlesCount=13` +
-      `&articlesSortBy=date` +
-      `&articleBodyLen=-1` +
-      `&resultType=articles` +
-      `&dataType=news` +
-      `&apiKey=${API_KEY}`,
+      `https://eventregistry.org/api/v1/article/getArticles`,
       {
-        method: 'GET',
+        method: 'POST',
         headers: {
-          'Accept': 'application/json',
           'Content-Type': 'application/json',
-          'Origin': window.location.origin,
+          'Accept': 'application/json',
         },
-        mode: 'cors',
+        body: JSON.stringify({
+          action: "getArticles",
+          keyword: searchQuery,
+          articlesPage: 1,
+          articlesCount: 13,
+          articlesSortBy: "date",
+          articlesSortByAsc: false,
+          articleBodyLen: -1,
+          dataType: ["news", "pr"],
+          forceMaxDataTimeWindow: 31,
+          resultType: "articles",
+          apiKey: API_KEY
+        }),
       }
     );
     
@@ -59,7 +62,7 @@ const fetchWeddingNews = async (searchQuery: string = "wedding") => {
     console.log('Raw API Response:', data);
 
     // Check for articles in the correct location of the response
-    const articles = data.articles?.articles || data.articles || [];
+    const articles = data.articles?.results || [];
     
     if (!Array.isArray(articles)) {
       console.error('Invalid API response format:', data);
@@ -70,9 +73,9 @@ const fetchWeddingNews = async (searchQuery: string = "wedding") => {
       articles: articles.map((article: any) => ({
         title: article.title || 'No title available',
         description: article.body || article.description || 'No description available',
-        publishedAt: article.dateTime || article.publishedAt || new Date().toISOString(),
-        urlToImage: article.image || article.urlToImage,
-        source: { name: article.source?.title || article.source?.name || 'Unknown Source' },
+        publishedAt: article.dateTime || article.date || new Date().toISOString(),
+        urlToImage: article.image || article.url,
+        source: { name: article.source?.title || 'Unknown Source' },
         url: article.url || '#'
       }))
     };
