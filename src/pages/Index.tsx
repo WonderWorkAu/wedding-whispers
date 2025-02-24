@@ -29,15 +29,21 @@ const fetchWeddingNews = async (searchQuery: string = "wedding") => {
     `&sortBy=popularity` +
     `&pageSize=13` +
     `&language=en` +
-    `&apiKey=${API_KEY}`
+    `&apiKey=${API_KEY}`,
+    {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    }
   );
   
+  const data = await response.json();
   if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    throw new Error(errorData?.message || "Failed to fetch news");
+    throw new Error(data.message || "Failed to fetch news");
   }
   
-  return response.json();
+  return data;
 };
 
 const Index = () => {
@@ -48,13 +54,15 @@ const Index = () => {
     queryKey: ["news", searchQuery],
     queryFn: () => fetchWeddingNews(searchQuery),
     refetchInterval: 1000 * 60 * 60, // Refetch every hour
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to fetch news",
-        variant: "destructive",
-      });
-    },
+    meta: {
+      onError: (error: Error) => {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    }
   });
 
   const handleSearch = (e: React.FormEvent) => {
@@ -65,7 +73,7 @@ const Index = () => {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-lg text-gray-600">Unable to load wedding news at this time.</p>
+        <p className="text-lg text-gray-600">Unable to load wedding news at this time. The NewsAPI free tier only works on localhost during development.</p>
       </div>
     );
   }
@@ -126,3 +134,4 @@ const Index = () => {
 };
 
 export default Index;
+
