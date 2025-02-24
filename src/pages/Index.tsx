@@ -1,6 +1,6 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NewsCard } from "@/components/NewsCard";
 import { FeaturedNews } from "@/components/FeaturedNews";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -87,13 +87,12 @@ const Index = () => {
     },
   });
 
-  // Handle error state with useEffect
-  React.useEffect(() => {
+  useEffect(() => {
     if (error) {
       console.error('Query error:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to fetch wedding news",
+        description: error instanceof Error ? error.message : "Failed to fetch wedding news",
         variant: "destructive",
       });
     }
@@ -158,3 +157,4 @@ const Index = () => {
 };
 
 export default Index;
+
