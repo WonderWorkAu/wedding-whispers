@@ -51,6 +51,12 @@
   }
 }
 
+@layer components {
+  .news-card {
+    @apply relative overflow-hidden rounded-lg bg-white p-6 shadow-lg transition-all duration-300 hover:shadow-xl;
+  }
+}
+
 @layer utilities {
   .font-serif {
     font-family: 'Playfair Display', serif;
@@ -58,10 +64,6 @@
   .font-sans {
     font-family: 'Inter', sans-serif;
   }
-}
-
-.news-card {
-  @apply relative overflow-hidden rounded-lg bg-card p-6 shadow-lg transition-all duration-300 hover:shadow-xl;
 }
 
 .news-card:hover {
